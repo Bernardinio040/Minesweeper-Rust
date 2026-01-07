@@ -3,17 +3,11 @@ use crate::egui::ViewportCommand;
 use eframe::egui;
 use eframe::egui::Vec2;
 
-pub struct Minesweeper {
-    label: String,
-    value: f32,
-}
+pub struct Minesweeper {}
 
 impl Default for Minesweeper {
     fn default() -> Self {
-        Self {
-            label: "Hello World!".to_owned(),
-            value: 2.7,
-        }
+        Self {}
     }
 }
 
@@ -26,14 +20,14 @@ impl Minesweeper {
 impl eframe::App for Minesweeper {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         ctx.set_visuals(egui::Visuals::dark());
-        egui::TopBottomPanel::top("my_panel").show(ctx, |ui| {
+        egui::TopBottomPanel::top("top_down_menu").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("Game", |ui| {
                     #[cfg(not(target_arch = "wasm32"))]
                     if ui.button("Easy").clicked() {
                         //9x9 minefield
                         ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(Vec2::new(
-                            300.0, 400.0,
+                            330.0, 400.0,
                         )));
                     }
                     if ui.button("Medium").clicked() {
@@ -56,13 +50,19 @@ impl eframe::App for Minesweeper {
             })
         });
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("eframe template");
+            ui.style_mut().spacing.button_padding = Vec2::new(5.0, 5.0);
 
-            ui.add(egui::Slider::new(&mut self.value, 0.0..=10.0).text("value"));
+            ui.vertical(|ui| {
+                for _y in 0..9 {
+                    ui.horizontal(|ui| {
+                        ui.spacing_mut().item_spacing = Vec2::new(5.0, 5.0);
 
-            if ui.button("Increment").clicked() {
-                self.value += 1.0;
-            }
+                        for _x in 0..9 {
+                            if ui.add_sized([30.0, 30.0], egui::Button::new("")).clicked() {}
+                        }
+                    });
+                }
+            });
         });
     }
 }
@@ -70,8 +70,8 @@ impl eframe::App for Minesweeper {
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_inner_size([300.0, 400.0])
-            .with_min_inner_size([250.0, 400.0])
+            .with_inner_size([330.0, 400.0])
+            .with_min_inner_size([330.0, 400.0])
             .with_max_inner_size([900.0, 500.0])
             .with_icon(
                 eframe::icon_data::from_png_bytes(&include_bytes!("../assets/icon.png")[..])
