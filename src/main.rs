@@ -2,6 +2,8 @@
 use crate::egui::ViewportCommand;
 use eframe::egui;
 use eframe::egui::Vec2;
+use eframe::egui::{Color32, RichText};
+use std::time::{Duration, Instant};
 
 enum Difficulty {
     Easy,
@@ -11,12 +13,16 @@ enum Difficulty {
 
 pub struct Minesweeper {
     wizard: Difficulty,
+    bombs: u32,
+    time: Option<Instant>,
 }
 
 impl Default for Minesweeper {
     fn default() -> Self {
         Self {
             wizard: Difficulty::Easy,
+            bombs: 10,
+            time: Some(Instant::now()),
         }
     }
 }
@@ -37,22 +43,28 @@ impl eframe::App for Minesweeper {
                     if ui.button("Easy").clicked() {
                         //9x9 minefield - 10 bombs
                         self.wizard = Difficulty::Easy;
+                        self.bombs = 10;
+                        self.time = Some(Instant::now());
                         ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(Vec2::new(
-                            330.0, 400.0,
+                            330.0, 380.0,
                         )));
                     }
                     if ui.button("Medium").clicked() {
                         //16x16 minefield - 40 bombs
                         self.wizard = Difficulty::Medium;
+                        self.bombs = 40;
+                        self.time = Some(Instant::now());
                         ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(Vec2::new(
-                            570.0, 650.0,
+                            570.0, 605.0,
                         )))
                     }
                     if ui.button("Hard").clicked() {
                         //30x16 minefield - 99 bombs
                         self.wizard = Difficulty::Hard;
+                        self.bombs = 99;
+                        self.time = Some(Instant::now());
                         ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(Vec2::new(
-                            1060.0, 650.0,
+                            1060.0, 605.0,
                         )))
                     }
                     if ui.button("Exit").clicked() {
@@ -70,6 +82,32 @@ impl eframe::App for Minesweeper {
                 Difficulty::Hard => (16, 30),
             };
 
+            ui.add_space(5.0);
+
+            ui.horizontal(|ui| {
+                ui.label(
+                    RichText::new(format!("Bombs: {}", self.bombs))
+                        .size(15.0)
+                        .color(Color32::WHITE)
+                        .monospace(),
+                );
+
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    let elapsed = match self.time {
+                        Some(time) => time.elapsed().as_secs(),
+                        None => 0,
+                    };
+                    ui.label(
+                        RichText::new(format!("Time: {}", elapsed))
+                            .size(15.0)
+                            .color(Color32::WHITE)
+                            .monospace(),
+                    );
+                });
+            });
+
+            ui.add_space(15.0);
+
             ui.vertical(|ui| {
                 for _y in 0..rows {
                     ui.horizontal(|ui| {
@@ -82,15 +120,18 @@ impl eframe::App for Minesweeper {
                 }
             });
         });
+
+        //repaint every second for timer
+        ctx.request_repaint_after(Duration::from_secs(1));
     }
 }
 
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_inner_size([330.0, 400.0])
-            .with_min_inner_size([330.0, 400.0])
-            .with_max_inner_size([1060.0, 650.0])
+            .with_inner_size([330.0, 380.0])
+            .with_min_inner_size([330.0, 380.0])
+            .with_max_inner_size([1060.0, 605.0])
             .with_icon(
                 eframe::icon_data::from_png_bytes(&include_bytes!("../assets/icon.png")[..])
                     .expect("Failed to load icon"),
