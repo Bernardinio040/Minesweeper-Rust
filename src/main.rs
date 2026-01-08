@@ -4,6 +4,8 @@ use eframe::egui;
 use eframe::egui::Vec2;
 use eframe::egui::{Color32, RichText};
 use std::time::{Duration, Instant};
+mod game_logic;
+use game_logic::Game;
 
 enum Difficulty {
     Easy,
