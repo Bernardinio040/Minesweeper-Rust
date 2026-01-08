@@ -1,4 +1,4 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] //hide console window on Windows in release
 use crate::egui::ViewportCommand;
 use eframe::egui;
 use eframe::egui::Vec2;
@@ -22,7 +22,7 @@ impl Default for Minesweeper {
 }
 
 impl Minesweeper {
-    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         Default::default()
     }
 }
@@ -31,25 +31,25 @@ impl eframe::App for Minesweeper {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         ctx.set_visuals(egui::Visuals::dark());
         egui::TopBottomPanel::top("top_down_menu").show(ctx, |ui| {
-            egui::menu::bar(ui, |ui| {
+            egui::MenuBar::new().ui(ui, |ui| {
                 ui.menu_button("Game", |ui| {
                     #[cfg(not(target_arch = "wasm32"))]
                     if ui.button("Easy").clicked() {
-                        //9x9 minefield
+                        //9x9 minefield - 10 bombs
                         self.wizard = Difficulty::Easy;
                         ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(Vec2::new(
                             330.0, 400.0,
                         )));
                     }
                     if ui.button("Medium").clicked() {
-                        //16x16 minefield
+                        //16x16 minefield - 40 bombs
                         self.wizard = Difficulty::Medium;
                         ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(Vec2::new(
                             570.0, 650.0,
                         )))
                     }
                     if ui.button("Hard").clicked() {
-                        //30x16 minefield
+                        //30x16 minefield - 99 bombs
                         self.wizard = Difficulty::Hard;
                         ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(Vec2::new(
                             1060.0, 650.0,
