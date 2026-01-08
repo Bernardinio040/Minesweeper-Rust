@@ -1,0 +1,8 @@
+[package]
+name = "Minesweeper"
+version = "0.1.0"
+edition = "2024"
+authors = ["Bernard Kałużyński"]
+
+[dependencies]
+eframe = "0.33.2 "
