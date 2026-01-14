@@ -15,6 +15,7 @@ enum Difficulty {
 
 pub struct Minesweeper {
     wizard: Difficulty,
+    game: Game,
     bombs: u32,
     time: Option<Instant>,
 }
@@ -23,6 +24,7 @@ impl Default for Minesweeper {
     fn default() -> Self {
         Self {
             wizard: Difficulty::Easy,
+            game: Game::new(9, 9, 10),
             bombs: 10,
             time: Some(Instant::now()),
         }
@@ -45,6 +47,7 @@ impl eframe::App for Minesweeper {
                     if ui.button("Easy").clicked() {
                         //9x9 minefield - 10 bombs
                         self.wizard = Difficulty::Easy;
+                        self.game = Game::new(9, 9, 10);
                         self.bombs = 10;
                         self.time = Some(Instant::now());
                         ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(Vec2::new(
@@ -54,6 +57,7 @@ impl eframe::App for Minesweeper {
                     if ui.button("Medium").clicked() {
                         //16x16 minefield - 40 bombs
                         self.wizard = Difficulty::Medium;
+                        self.game = Game::new(16, 16, 40);
                         self.bombs = 40;
                         self.time = Some(Instant::now());
                         ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(Vec2::new(
@@ -63,6 +67,7 @@ impl eframe::App for Minesweeper {
                     if ui.button("Hard").clicked() {
                         //30x16 minefield - 99 bombs
                         self.wizard = Difficulty::Hard;
+                        self.game = Game::new(30, 16, 99);
                         self.bombs = 99;
                         self.time = Some(Instant::now());
                         ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(Vec2::new(
@@ -111,12 +116,20 @@ impl eframe::App for Minesweeper {
             ui.add_space(15.0);
 
             ui.vertical(|ui| {
-                for _y in 0..rows {
+                for y in 0..rows {
                     ui.horizontal(|ui| {
                         ui.spacing_mut().item_spacing = Vec2::new(5.0, 5.0);
 
-                        for _x in 0..cols {
-                            if ui.add_sized([30.0, 30.0], egui::Button::new("")).clicked() {}
+                        for x in 0..cols {
+                            let cell = &self.game.board[x][y];
+
+                            if ui.add_sized([30.0, 30.0], egui::Button::new("")).clicked() {
+                                if !self.game.is_initialized {
+                                    Game::generateBombs(&mut self.game, x, y);
+                                    self.game.is_initialized = true;
+                                    Game::debug_print_board(&self.game);
+                                }
+                            }
                         }
                     });
                 }

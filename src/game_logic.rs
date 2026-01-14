@@ -1,52 +1,89 @@
-pub struct Game {
-    sizeX: u32,
-    sizeY: u32,
-    bombs: u32,
-    board: Vec<Vec<i32>>,
+use rand::Rng;
+
+#[derive(Clone, Debug, Copy)]
+pub struct Cell {
+    pub is_mine: bool,
+    pub is_revealed: bool,
+    pub is_flagged: bool,
+    pub neighbor_mines: u8, //0-8
 }
 
-//function that will generate bombs after first click
-fn generateBombs(sizeX: u32, sizeY: u32, bombs: u32, x: u32, y: u32) {
-    let mut board = vec![vec![0; sizeY as usize]; sizeX as usize];
-    let mut rng = rand::thread_rng();
-    let mut placed = 0;
-
-    while placed < bombs {
-        let row = rng.gen_range(0..sizeX);
-        let col = rng.gen_range(0..sizeY);
-
-        if row == x && col == y {
-            continue;
+impl Cell {
+    fn empty() -> Self {
+        Self {
+            is_mine: false,
+            is_revealed: false,
+            is_flagged: false,
+            neighbor_mines: 0,
         }
+    }
+}
 
-        if board[row as usize][col as usize] == 0 {
-            board[row as usize][col as usize] = 1;
-            placed += 1;
+pub struct Game {
+    pub size_x: usize,
+    pub size_y: usize,
+    pub bombs: u32,
+    pub is_initialized: bool,
+    pub board: Vec<Vec<Cell>>,
+}
+
+impl Game {
+    pub fn new(size_x: usize, size_y: usize, bombs: u32) -> Self {
+        let board = vec![vec![Cell::empty(); size_y]; size_x];
+
+        Game {
+            size_x,
+            size_y,
+            bombs,
+            is_initialized: false,
+            board,
         }
     }
 
-    board
-}
+    //function that will generate bombs after first click
+    pub fn generateBombs(&mut self, first_x: usize, first_y: usize) {
+        let mut rng = rand::rng();
+        let mut placed = 0;
 
-fn debug_print_board(board: &Vec<Vec<i32>>) {
-    let width = board.len();
-    let height = board[0].len();
+        while placed < self.bombs {
+            let x = rng.random_range(0..self.size_x);
+            let y = rng.random_range(0..self.size_y);
 
-    for y in 0..height {
-        print!("{:2} | ", y);
+            if x == first_x && y == first_y {
+                continue;
+            }
 
-        for x in 0..width {
-            let cell = board[x][y];
+            if !self.board[x][y].is_mine {
+                self.board[x][y].is_mine = true;
+                placed += 1;
+            }
 
-            let symbol = match cell {
-                1 => "X".to_string(),
-                0 => ".".to_string(),
-                n => n.to_string(),
-            };
-
-            print!("{} ", symbol);
+            //self.calculate_numbers();
         }
+    }
 
-        println!();
+    pub fn debug_print_board(game: &Game) {
+        let width = game.size_x;
+        let height = game.size_y;
+
+        println!("Wait for first click to generate map...");
+
+        for y in 0..height {
+            print!("{:2} | ", y);
+            for x in 0..width {
+                let cell = &game.board[x][y];
+
+                let symbol = if cell.is_mine {
+                    "X".to_string()
+                } else if cell.neighbor_mines == 0 {
+                    ".".to_string()
+                } else {
+                    cell.neighbor_mines.to_string()
+                };
+
+                print!("{} ", symbol);
+            }
+            println!();
+        }
     }
 }
