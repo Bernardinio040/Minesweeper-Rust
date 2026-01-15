@@ -23,8 +23,9 @@ pub struct Game {
     pub size_x: usize,
     pub size_y: usize,
     pub bombs: u32,
-    pub is_initialized: bool,
     pub board: Vec<Vec<Cell>>,
+    pub is_initialized: bool,
+    pub is_game_over: bool,
 }
 
 impl Game {
@@ -37,11 +38,12 @@ impl Game {
             bombs,
             is_initialized: false,
             board,
+            is_game_over: false,
         }
     }
 
     //function that will generate bombs after first click
-    pub fn generateBombs(&mut self, first_x: usize, first_y: usize) {
+    pub fn generate_bombs(&mut self, first_x: usize, first_y: usize) {
         let mut rng = rand::rng();
         let mut placed = 0;
 
@@ -58,7 +60,68 @@ impl Game {
                 placed += 1;
             }
 
-            //self.calculate_numbers();
+            self.calculate_numbers();
+        }
+
+        self.reveal_cell(first_x, first_y);
+    }
+
+    pub fn calculate_numbers(&mut self) {
+        for y in 0..self.size_y {
+            for x in 0..self.size_x {
+                if self.board[x][y].is_mine {
+                    continue;
+                }
+
+                let mut count = 0;
+
+                for dy in -1..=1 {
+                    for dx in -1..=1 {
+                        let nx = x as i32 + dx;
+                        let ny = y as i32 + dy;
+
+                        if nx < 0 || nx >= self.size_x as i32 || ny < 0 || ny >= self.size_y as i32
+                        {
+                            continue;
+                        }
+
+                        if self.board[nx as usize][ny as usize].is_mine {
+                            count += 1;
+                        }
+                    }
+                }
+
+                self.board[x][y].neighbor_mines = count;
+            }
+        }
+    }
+
+    pub fn reveal_cell(&mut self, x: usize, y: usize) {
+        if self.board[x][y].is_revealed {
+            return;
+        }
+
+        //game over
+        if self.board[x][y].is_mine {
+            self.is_game_over = true;
+            return;
+        }
+
+        self.board[x][y].is_revealed = true;
+
+        if self.board[x][y].neighbor_mines == 0 {
+            for dy in -1..=1 {
+                for dx in -1..=1 {
+                    let nx = x as i32 + dx;
+                    let ny = y as i32 + dy;
+
+                    if nx < 0 || nx >= self.size_x as i32 || ny < 0 || ny >= self.size_y as i32 {
+                        continue;
+                    }
+
+                    self.reveal_cell(nx as usize, ny as usize);
+                }
+            }
         }
     }
 
@@ -81,7 +144,7 @@ impl Game {
                     cell.neighbor_mines.to_string()
                 };
 
-                print!("{} ", symbol);
+                print!("{}{} ", symbol, if cell.is_revealed { "R" } else { " " });
             }
             println!();
         }

@@ -17,7 +17,7 @@ pub struct Minesweeper {
     wizard: Difficulty,
     game: Game,
     bombs: u32,
-    time: Option<Instant>,
+    time: Instant,
 }
 
 impl Default for Minesweeper {
@@ -26,7 +26,7 @@ impl Default for Minesweeper {
             wizard: Difficulty::Easy,
             game: Game::new(9, 9, 10),
             bombs: 10,
-            time: Some(Instant::now()),
+            time: Instant::now(),
         }
     }
 }
@@ -35,44 +35,52 @@ impl Minesweeper {
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         Default::default()
     }
+
+    pub fn select_difficulty(&mut self, difficulty: Difficulty, ctx: &egui::Context) {
+        match difficulty {
+            Difficulty::Easy => {
+                self.wizard = Difficulty::Easy;
+                self.game = Game::new(9, 9, 10);
+                self.bombs = 10;
+                ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(Vec2::new(330.0, 380.0)));
+            }
+            Difficulty::Medium => {
+                self.wizard = Difficulty::Medium;
+                self.game = Game::new(16, 16, 40);
+                self.bombs = 40;
+                ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(Vec2::new(570.0, 605.0)));
+            }
+            Difficulty::Hard => {
+                self.wizard = Difficulty::Hard;
+                self.game = Game::new(30, 16, 99);
+                self.bombs = 99;
+                ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(Vec2::new(1060.0, 605.0)));
+            }
+        }
+
+        self.time = Instant::now();
+    }
 }
 
 impl eframe::App for Minesweeper {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         ctx.set_visuals(egui::Visuals::dark());
+        //topdown menu with difficulty selection and exit
         egui::TopBottomPanel::top("top_down_menu").show(ctx, |ui| {
             egui::MenuBar::new().ui(ui, |ui| {
                 ui.menu_button("Game", |ui| {
                     #[cfg(not(target_arch = "wasm32"))]
                     if ui.button("Easy").clicked() {
                         //9x9 minefield - 10 bombs
-                        self.wizard = Difficulty::Easy;
-                        self.game = Game::new(9, 9, 10);
-                        self.bombs = 10;
-                        self.time = Some(Instant::now());
-                        ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(Vec2::new(
-                            330.0, 380.0,
-                        )));
+                        self.select_difficulty(Difficulty::Easy, ctx);
                     }
                     if ui.button("Medium").clicked() {
                         //16x16 minefield - 40 bombs
-                        self.wizard = Difficulty::Medium;
-                        self.game = Game::new(16, 16, 40);
-                        self.bombs = 40;
-                        self.time = Some(Instant::now());
-                        ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(Vec2::new(
-                            570.0, 605.0,
-                        )))
+                        self.select_difficulty(Difficulty::Medium, ctx);
                     }
                     if ui.button("Hard").clicked() {
                         //30x16 minefield - 99 bombs
-                        self.wizard = Difficulty::Hard;
-                        self.game = Game::new(30, 16, 99);
-                        self.bombs = 99;
-                        self.time = Some(Instant::now());
-                        ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(Vec2::new(
-                            1060.0, 605.0,
-                        )))
+                        self.select_difficulty(Difficulty::Hard, ctx);
                     }
                     if ui.button("Exit").clicked() {
                         ctx.send_viewport_cmd(ViewportCommand::Close);
@@ -83,6 +91,7 @@ impl eframe::App for Minesweeper {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.style_mut().spacing.button_padding = Vec2::new(5.0, 5.0);
 
+            //minefield size gen
             let (rows, cols) = match self.wizard {
                 Difficulty::Easy => (9, 9),
                 Difficulty::Medium => (16, 16),
@@ -92,6 +101,7 @@ impl eframe::App for Minesweeper {
             ui.add_space(5.0);
 
             ui.horizontal(|ui| {
+                //bomb count
                 ui.label(
                     RichText::new(format!("Bombs: {}", self.bombs))
                         .size(15.0)
@@ -99,11 +109,9 @@ impl eframe::App for Minesweeper {
                         .monospace(),
                 );
 
+                //timer
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    let elapsed = match self.time {
-                        Some(time) => time.elapsed().as_secs(),
-                        None => 0,
-                    };
+                    let elapsed = self.time.elapsed().as_secs();
                     ui.label(
                         RichText::new(format!("Time: {}", elapsed))
                             .size(15.0)
@@ -121,14 +129,25 @@ impl eframe::App for Minesweeper {
                         ui.spacing_mut().item_spacing = Vec2::new(5.0, 5.0);
 
                         for x in 0..cols {
-                            let cell = &self.game.board[x][y];
+                            //let cell = &self.game.board[x][y];
+                            let cell = egui::Button::new("");
+                            let response = ui.add_sized([30.0, 30.0], cell);
 
-                            if ui.add_sized([30.0, 30.0], egui::Button::new("")).clicked() {
+                            if response.clicked() {
                                 if !self.game.is_initialized {
-                                    Game::generateBombs(&mut self.game, x, y);
+                                    Game::generate_bombs(&mut self.game, x, y);
                                     self.game.is_initialized = true;
                                     Game::debug_print_board(&self.game);
-                                }
+                                } else if !self.game.is_game_over {
+                                    Game::reveal_cell(&mut self.game, x, y);
+                                    Game::debug_print_board(&self.game);
+                                } // else {
+                                //     Game::reveal_all_cells(&mut self.game);
+                                // }
+                            }
+
+                            if response.secondary_clicked() {
+                                // flag handler
                             }
                         }
                     });
