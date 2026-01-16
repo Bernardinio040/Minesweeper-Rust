@@ -5,7 +5,7 @@ pub struct Cell {
     pub is_mine: bool,
     pub is_revealed: bool,
     pub is_flagged: bool,
-    pub neighbor_mines: u8, //0-8
+    pub neighbour_mines: u8, //0-8
 }
 
 impl Cell {
@@ -14,7 +14,7 @@ impl Cell {
             is_mine: false,
             is_revealed: false,
             is_flagged: false,
-            neighbor_mines: 0,
+            neighbour_mines: 0,
         }
     }
 }
@@ -91,7 +91,7 @@ impl Game {
                     }
                 }
 
-                self.board[x][y].neighbor_mines = count;
+                self.board[x][y].neighbour_mines = count;
             }
         }
     }
@@ -109,7 +109,7 @@ impl Game {
 
         self.board[x][y].is_revealed = true;
 
-        if self.board[x][y].neighbor_mines == 0 {
+        if self.board[x][y].neighbour_mines == 0 {
             for dy in -1..=1 {
                 for dx in -1..=1 {
                     let nx = x as i32 + dx;
@@ -138,10 +138,10 @@ impl Game {
 
                 let symbol = if cell.is_mine {
                     "X".to_string()
-                } else if cell.neighbor_mines == 0 {
+                } else if cell.neighbour_mines == 0 {
                     ".".to_string()
                 } else {
-                    cell.neighbor_mines.to_string()
+                    cell.neighbour_mines.to_string()
                 };
 
                 print!("{}{} ", symbol, if cell.is_revealed { "R" } else { " " });

@@ -7,6 +7,7 @@ use std::time::{Duration, Instant};
 mod game_logic;
 use game_logic::Game;
 
+#[derive(Clone, Copy, PartialEq, Debug)]
 enum Difficulty {
     Easy,
     Medium,
@@ -129,10 +130,29 @@ impl eframe::App for Minesweeper {
                         ui.spacing_mut().item_spacing = Vec2::new(5.0, 5.0);
 
                         for x in 0..cols {
-                            //let cell = &self.game.board[x][y];
-                            let cell = egui::Button::new("");
-                            let response = ui.add_sized([30.0, 30.0], cell);
+                            let cell = &self.game.board[x][y];
+                            let mut button = egui::Button::new("");
 
+                            //displaying cell type
+                            if cell.is_revealed {
+                                match cell.neighbour_mines {
+                                    1 => button = egui::Button::new("1"),
+                                    2 => button = egui::Button::new("2"),
+                                    3 => button = egui::Button::new("3"),
+                                    4 => button = egui::Button::new("4"),
+                                    5 => button = egui::Button::new("5"),
+                                    6 => button = egui::Button::new("6"),
+                                    7 => button = egui::Button::new("7"),
+                                    8 => button = egui::Button::new("8"),
+                                    _ => button = egui::Button::new(""),
+                                }
+                            } else if cell.is_flagged {
+                                button = egui::Button::new("F");
+                            }
+
+                            let response = ui.add_sized([30.0, 30.0], button);
+
+                            //left click handler
                             if response.clicked() {
                                 if !self.game.is_initialized {
                                     Game::generate_bombs(&mut self.game, x, y);
@@ -141,11 +161,10 @@ impl eframe::App for Minesweeper {
                                 } else if !self.game.is_game_over {
                                     Game::reveal_cell(&mut self.game, x, y);
                                     Game::debug_print_board(&self.game);
-                                } // else {
-                                //     Game::reveal_all_cells(&mut self.game);
-                                // }
+                                }
                             }
 
+                            //right click handler
                             if response.secondary_clicked() {
                                 // flag handler
                             }
@@ -154,6 +173,38 @@ impl eframe::App for Minesweeper {
                 }
             });
         });
+
+        if self.game.is_game_over {
+            egui::Window::new("Game Over")
+                .collapsible(false)
+                .resizable(false)
+                .title_bar(false)
+                .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
+                .show(ctx, |ui| {
+                    ui.vertical_centered(|ui| {
+                        ui.add_space(10.0);
+                        ui.label(
+                            egui::RichText::new("GAME OVER")
+                                .size(30.0)
+                                .color(egui::Color32::RED)
+                                .strong(),
+                        );
+
+                        ui.add_space(20.0);
+
+                        //restart handler
+                        if ui.button("Spróbuj ponownie").clicked() {
+                            self.select_difficulty(self.wizard, ctx);
+                        }
+
+                        ui.add_space(10.0);
+
+                        if ui.button("Wyjdź").clicked() {
+                            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                        }
+                    });
+                });
+        }
 
         //repaint every second for timer
         ctx.request_repaint_after(Duration::from_secs(1));
