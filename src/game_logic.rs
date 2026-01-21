@@ -22,32 +22,34 @@ impl Cell {
 pub struct Game {
     pub size_x: usize,
     pub size_y: usize,
-    pub bombs: u32,
+    pub mines: u32,
     pub board: Vec<Vec<Cell>>,
     pub is_initialized: bool,
     pub is_game_over: bool,
+    pub is_win: bool,
 }
 
 impl Game {
-    pub fn new(size_x: usize, size_y: usize, bombs: u32) -> Self {
+    pub fn new(size_x: usize, size_y: usize, mines: u32) -> Self {
         let board = vec![vec![Cell::empty(); size_y]; size_x];
 
         Game {
             size_x,
             size_y,
-            bombs,
+            mines,
             is_initialized: false,
             board,
             is_game_over: false,
+            is_win: false,
         }
     }
 
-    //function that will generate bombs after first click
-    pub fn generate_bombs(&mut self, first_x: usize, first_y: usize) {
+    //function that will generate mines after first click
+    pub fn generate_mines(&mut self, first_x: usize, first_y: usize) {
         let mut rng = rand::rng();
         let mut placed = 0;
 
-        while placed < self.bombs {
+        while placed < self.mines {
             let x = rng.random_range(0..self.size_x);
             let y = rng.random_range(0..self.size_y);
 
@@ -104,6 +106,7 @@ impl Game {
         //game over
         if self.board[x][y].is_mine {
             self.is_game_over = true;
+            self.is_win = false;
             return;
         }
 
@@ -122,6 +125,27 @@ impl Game {
                     self.reveal_cell(nx as usize, ny as usize);
                 }
             }
+        }
+
+        self.check_win_condition();
+    }
+
+    fn check_win_condition(&mut self) {
+        let mut revealed_count = 0;
+        let total_cells = self.size_x * self.size_y;
+
+        for x in 0..self.size_x {
+            for y in 0..self.size_y {
+                if self.board[x][y].is_revealed {
+                    revealed_count += 1;
+                }
+            }
+        }
+
+        //win condition is if all cells are revealed except for the mines
+        if revealed_count == (total_cells - self.mines as usize) {
+            self.is_game_over = true;
+            self.is_win = true;
         }
     }
 

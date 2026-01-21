@@ -8,7 +8,7 @@ mod game_logic;
 use game_logic::Game;
 
 #[derive(Clone, Copy, PartialEq, Debug)]
-enum Difficulty {
+pub enum Difficulty {
     Easy,
     Medium,
     Hard,
@@ -17,8 +17,9 @@ enum Difficulty {
 pub struct Minesweeper {
     wizard: Difficulty,
     game: Game,
-    bombs: u32,
+    mines: u32,
     time: Instant,
+    final_time: Option<u64>,
 }
 
 impl Default for Minesweeper {
@@ -26,8 +27,9 @@ impl Default for Minesweeper {
         Self {
             wizard: Difficulty::Easy,
             game: Game::new(9, 9, 10),
-            bombs: 10,
+            mines: 10,
             time: Instant::now(),
+            final_time: None,
         }
     }
 }
@@ -42,24 +44,25 @@ impl Minesweeper {
             Difficulty::Easy => {
                 self.wizard = Difficulty::Easy;
                 self.game = Game::new(9, 9, 10);
-                self.bombs = 10;
+                self.mines = 10;
                 ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(Vec2::new(330.0, 380.0)));
             }
             Difficulty::Medium => {
                 self.wizard = Difficulty::Medium;
                 self.game = Game::new(16, 16, 40);
-                self.bombs = 40;
+                self.mines = 40;
                 ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(Vec2::new(570.0, 605.0)));
             }
             Difficulty::Hard => {
                 self.wizard = Difficulty::Hard;
                 self.game = Game::new(30, 16, 99);
-                self.bombs = 99;
+                self.mines = 99;
                 ctx.send_viewport_cmd(egui::ViewportCommand::InnerSize(Vec2::new(1060.0, 605.0)));
             }
         }
 
         self.time = Instant::now();
+        self.final_time = None;
     }
 }
 
@@ -72,15 +75,15 @@ impl eframe::App for Minesweeper {
                 ui.menu_button("Game", |ui| {
                     #[cfg(not(target_arch = "wasm32"))]
                     if ui.button("Easy").clicked() {
-                        //9x9 minefield - 10 bombs
+                        //9x9 minefield - 10 mines
                         self.select_difficulty(Difficulty::Easy, ctx);
                     }
                     if ui.button("Medium").clicked() {
-                        //16x16 minefield - 40 bombs
+                        //16x16 minefield - 40 mines
                         self.select_difficulty(Difficulty::Medium, ctx);
                     }
                     if ui.button("Hard").clicked() {
-                        //30x16 minefield - 99 bombs
+                        //30x16 minefield - 99 mines
                         self.select_difficulty(Difficulty::Hard, ctx);
                     }
                     if ui.button("Exit").clicked() {
@@ -102,9 +105,9 @@ impl eframe::App for Minesweeper {
             ui.add_space(5.0);
 
             ui.horizontal(|ui| {
-                //bomb count
+                //mines count
                 ui.label(
-                    RichText::new(format!("Bombs: {}", self.bombs))
+                    RichText::new(format!("Mines: {}", self.mines))
                         .size(15.0)
                         .color(Color32::WHITE)
                         .monospace(),
@@ -112,7 +115,12 @@ impl eframe::App for Minesweeper {
 
                 //timer
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    let elapsed = self.time.elapsed().as_secs();
+                    let elapsed = if let Some(final_t) = self.final_time {
+                        final_t
+                    } else {
+                        self.time.elapsed().as_secs()
+                    };
+
                     ui.label(
                         RichText::new(format!("Time: {}", elapsed))
                             .size(15.0)
@@ -155,7 +163,7 @@ impl eframe::App for Minesweeper {
                             //left click handler
                             if response.clicked() {
                                 if !self.game.is_initialized {
-                                    Game::generate_bombs(&mut self.game, x, y);
+                                    Game::generate_mines(&mut self.game, x, y);
                                     self.game.is_initialized = true;
                                     Game::debug_print_board(&self.game);
                                 } else if !self.game.is_game_over {
@@ -175,6 +183,11 @@ impl eframe::App for Minesweeper {
         });
 
         if self.game.is_game_over {
+            if self.final_time.is_none() {
+                self.final_time = Some(self.time.elapsed().as_secs());
+            }
+
+            //troche zmniejszyc szerokosc #wazne
             egui::Window::new("Game Over")
                 .collapsible(false)
                 .resizable(false)
@@ -183,14 +196,26 @@ impl eframe::App for Minesweeper {
                 .show(ctx, |ui| {
                     ui.vertical_centered(|ui| {
                         ui.add_space(10.0);
-                        ui.label(
-                            egui::RichText::new("GAME OVER")
-                                .size(30.0)
-                                .color(egui::Color32::RED)
-                                .strong(),
-                        );
 
-                        ui.add_space(20.0);
+                        let (text, color) = if self.game.is_win {
+                            ("WYGRANA!", Color32::GREEN)
+                        } else {
+                            ("GAME OVER", Color32::RED)
+                        };
+
+                        ui.label(egui::RichText::new(text).size(30.0).color(color).strong());
+
+                        //your time label after winning
+                        if self.game.is_win {
+                            let elapsed = if let Some(final_t) = self.final_time {
+                                final_t
+                            } else {
+                                self.time.elapsed().as_secs()
+                            };
+                            ui.label(format!("Your time: {} s", elapsed));
+                        }
+
+                        ui.add_space(10.0);
 
                         //restart handler
                         if ui.button("Spróbuj ponownie").clicked() {
@@ -202,6 +227,8 @@ impl eframe::App for Minesweeper {
                         if ui.button("Wyjdź").clicked() {
                             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                         }
+
+                        ui.add_space(10.0);
                     });
                 });
         }
