@@ -204,7 +204,7 @@ impl Game {
         }
     }
 
-    pub fn debug_print_board(game: &Game) {
+    pub fn _debug_print_board(game: &Game) {
         let width = game.size_x;
         let height = game.size_y;
 

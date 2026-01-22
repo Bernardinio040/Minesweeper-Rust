@@ -6,4 +6,5 @@ authors = ["Bernard Kałużyński"]
 
 [dependencies]
 eframe = "0.33.2 "
+image = "0.25.9"
 rand = "0.9.2"
