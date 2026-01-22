@@ -181,7 +181,13 @@ impl eframe::App for Minesweeper {
                                         self.game.is_initialized = true;
                                         Game::debug_print_board(&self.game);
                                     } else if !self.game.is_game_over {
-                                        Game::reveal_cell(&mut self.game, x, y);
+                                        if cell.is_revealed {
+                                            //when we click on revealed cell -> chord
+                                            self.game.chord_cell(x, y);
+                                        } else {
+                                            //when we click on unrevealed cell -> reveal
+                                            Game::reveal_cell(&mut self.game, x, y);
+                                        }
                                         Game::debug_print_board(&self.game);
                                     }
                                 }
@@ -202,12 +208,12 @@ impl eframe::App for Minesweeper {
                 self.final_time = Some(self.time.elapsed().as_secs());
             }
 
-            //troche zmniejszyc szerokosc #wazne
             egui::Window::new("Game Over")
                 .collapsible(false)
                 .resizable(false)
                 .title_bar(false)
                 .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
+                .max_width(280.0)
                 .show(ctx, |ui| {
                     ui.vertical_centered(|ui| {
                         ui.add_space(10.0);

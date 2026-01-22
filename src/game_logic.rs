@@ -156,6 +156,54 @@ impl Game {
         self.board[x][y].is_flagged = !self.board[x][y].is_flagged;
     }
 
+    //chording in minesweeper is when you click on a cell with a number and have flagged cells adjacent to that number.
+    //adjacent hidden cells are revealed
+    pub fn chord_cell(&mut self, x: usize, y: usize) {
+        if !self.board[x][y].is_revealed || self.board[x][y].neighbour_mines == 0 {
+            return;
+        }
+
+        let mut flags_count = 0;
+        for dy in -1..=1 {
+            for dx in -1..=1 {
+                if dx == 0 && dy == 0 {
+                    continue;
+                }
+
+                let nx = x as i32 + dx;
+                let ny = y as i32 + dy;
+
+                if nx >= 0 && nx < self.size_x as i32 && ny >= 0 && ny < self.size_y as i32 {
+                    if self.board[nx as usize][ny as usize].is_flagged {
+                        flags_count += 1;
+                    }
+                }
+            }
+        }
+
+        if flags_count == self.board[x][y].neighbour_mines {
+            for dy in -1..=1 {
+                for dx in -1..=1 {
+                    if dx == 0 && dy == 0 {
+                        continue;
+                    }
+
+                    let nx = x as i32 + dx;
+                    let ny = y as i32 + dy;
+
+                    if nx >= 0 && nx < self.size_x as i32 && ny >= 0 && ny < self.size_y as i32 {
+                        let ux = nx as usize;
+                        let uy = ny as usize;
+
+                        if !self.board[ux][uy].is_flagged && !self.board[ux][uy].is_revealed {
+                            self.reveal_cell(ux, uy);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     pub fn debug_print_board(game: &Game) {
         let width = game.size_x;
         let height = game.size_y;
