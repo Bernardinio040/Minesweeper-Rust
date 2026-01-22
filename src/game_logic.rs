@@ -149,6 +149,13 @@ impl Game {
         }
     }
 
+    pub fn toggle_flag(&mut self, x: usize, y: usize) {
+        if self.board[x][y].is_revealed || self.is_game_over {
+            return;
+        }
+        self.board[x][y].is_flagged = !self.board[x][y].is_flagged;
+    }
+
     pub fn debug_print_board(game: &Game) {
         let width = game.size_x;
         let height = game.size_y;

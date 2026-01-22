@@ -105,11 +105,24 @@ impl eframe::App for Minesweeper {
             ui.add_space(5.0);
 
             ui.horizontal(|ui| {
+                let flags_count = self
+                    .game
+                    .board
+                    .iter()
+                    .flatten()
+                    .filter(|c| c.is_flagged)
+                    .count();
+                let mines_left = self.mines as i32 - flags_count as i32;
+
                 //mines count
                 ui.label(
-                    RichText::new(format!("Mines: {}", self.mines))
+                    RichText::new(format!("Mines: {}", mines_left))
                         .size(15.0)
-                        .color(Color32::WHITE)
+                        .color(if mines_left < 0 {
+                            Color32::RED
+                        } else {
+                            Color32::WHITE
+                        })
                         .monospace(),
                 );
 
@@ -162,19 +175,21 @@ impl eframe::App for Minesweeper {
 
                             //left click handler
                             if response.clicked() {
-                                if !self.game.is_initialized {
-                                    Game::generate_mines(&mut self.game, x, y);
-                                    self.game.is_initialized = true;
-                                    Game::debug_print_board(&self.game);
-                                } else if !self.game.is_game_over {
-                                    Game::reveal_cell(&mut self.game, x, y);
-                                    Game::debug_print_board(&self.game);
+                                if !cell.is_flagged {
+                                    if !self.game.is_initialized {
+                                        Game::generate_mines(&mut self.game, x, y);
+                                        self.game.is_initialized = true;
+                                        Game::debug_print_board(&self.game);
+                                    } else if !self.game.is_game_over {
+                                        Game::reveal_cell(&mut self.game, x, y);
+                                        Game::debug_print_board(&self.game);
+                                    }
                                 }
                             }
 
                             //right click handler
                             if response.secondary_clicked() {
-                                // flag handler
+                                self.game.toggle_flag(x, y);
                             }
                         }
                     });
